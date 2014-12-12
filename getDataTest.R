@@ -4,7 +4,7 @@ library('XML')
 ## url generated from NYT API documentation
 
 setwd('/Users/abrooks/Documents/github/nyt')
-artkey <- scan('key.txt')
+artkey <- scan('key.txt', what='character')
 
 url <- paste0('http://api.nytimes.com/svc/search/v2/articlesearch.json?callback=svc_search_v2_articlesearch&
               begin_date=20120101&end_date=20130101&api-key=','sample-key')

@@ -1,3 +1,9 @@
+library('rjson')
+library('httr')
+library('rjson')
+library('RMongo')
+library('XML')
+
 ########################################################
 ## this function generates the URL for a GET request to the New York Times Article Search API
 ########################################################
@@ -24,26 +30,26 @@ if(1==0){
 ## this function actually makes the GET requests to the NYT Article Search API
 ########################################################
 
-getMeta <- function(url, pages=Inf, sleep=0.1) {
+getMeta <- function(url, pages=Inf, sleep=0.1, tryn=3) {
   art <- list()
   i <- 1
-  e <- c(-3,-2,-1) 
-  while(i<pages){
-    if(length(unique(e[(length(e)-2):length(e)]))==1) i <- i+1 
+  e <- seq(-tryn, -tryn/2, length.out=tryn)
+  while(i<=pages){
+    if(length(unique(e[(length(e)-(tryn-1)):length(e)]))==1) i <- i+1 ## attempt tryn times before moving on
     tryget <- try({
       urlp <- gsub('page=\\d+', paste0('page=', i), url)
       p <- GET(urlp)
       pt <- content(p, 'parsed')
       if(length(pt$response$docs)>0) art <- append(art, pt$response$docs)
       else {print(paste0(i, ' pages collected')); break}
-      print(i)
+      if(i %% 10 ==0) print(paste0(i, ' pages of metadata collected'))
       i <- i+1
     })
     
     if(class(tryget)=='try-error') {
-      print(paste0(i, ' error - not scraped'))
+      print(paste0(i, ' error - metadata page not scraped'))
       e <- c(e, i)
-      e <- e[(length(e)-2):length(e)]
+      e <- e[(length(e)-(tryn-1)):length(e)]
       Sys.sleep(0.5) ## probably scraping too fast -- slowing down
     }
     Sys.sleep(sleep)
@@ -62,24 +68,33 @@ if(1==0){
 ## this function extracts the text for a list of URLs
 ########################################################
 
-getArticles <- function(meta, n=Inf, overwrite=F, sleep=0.1) {
+getArticles <- function(meta, n=Inf, overwrite=F, sleep=0.1, mongo=list(dbName, collection, host='127.0.0.1', username, password, ...)) {
   metaArt <- meta
-  if(overwrite==T) {artIndex <- 1:n
-  } else { 
-    ii <-  which(sapply(meta, function(x) is.null(x[['bodyHTML']])))
-    artIndex <- ii[1:min(n,length(ii))]
+  if(is.null(mongo$dbName)==F){
+    con <- mongoDbConnect(mongo$dbName, mongo$host)
+    try(authenticated <-dbAuthenticate(con, username=mongo$username, password=mongo$password))
   }
-  for(i in artIndex){ 
+  if(overwrite==T) {artIndex <- 1:(min(n, length(meta)))
+  } else { 
+    ii <-  which(sapply(meta, function(x) is.null(x[['bodyHTML']]))) ## get index of articles that have not been scraped yet
+    artIndex <- ii[1:min(n,length(ii))] ## take first n articles
+  }
+  e <- c(-3,-2,-1) 
+  i<-1
+  while(i<=length(artIndex)){
+    if(length(unique(e[(length(e)-2):length(e)]))==1) i <- i+1 ## if we tried and failed 3 times, move on
     tryget <- try({
       if(overwrite==T | (is.null(meta[[i]]$body)==T & overwrite==F)) {
         p <- GET(meta[[i]]$web_url)
-        metaArt[[i]]$bodyHTML <- content(p, 'text')
-        metaArt[[i]]$body <- parseArticleBody(metaArt[[i]]$bodyHTML)
-        print(i)
+        html <- content(p, 'text') ## metaArt[[i]]$bodyHTML <- content(p, 'text')
+        metaArt[[i]]$body <- parseArticleBody(html)
+        if(is.null(mongo$dbName)==F) dbInsertDocument(con, mongo$collection, toJSON(metaArt[[i]]))
+        if(i %% 10==0) print(paste0(i, ' articles scraped'))
+        i<-i+1
       }
     })
     if(class(tryget)=='try-error') {
-      print(paste0(i, ' error - not scraped'))
+      print(paste0(i, ' error - article not scraped'))
       e <- c(e, i)
       e <- e[(length(e)-2):length(e)]
       Sys.sleep(0.5) ## probably scraping too fast -- slowing down
@@ -94,8 +109,10 @@ getArticles <- function(meta, n=Inf, overwrite=F, sleep=0.1) {
 if(1==0){
   library('httr')
   library('XML')
+  library('rjson')
   url <- makeURL(q='andrew+brooks', begin_date='20110101', end_date='20111025', key='sample-key')
   a <- getMeta(url, pages=25)
+  artxt <- getArticles(a, n=12, mongo=list(dbName='nyt', collection='test2', host='ds063240.mongolab.com:63240', username='user1', password='password'))
   artxt <- getArticles(a, n=12, overwrite=F)
   artxt <- getArticles(artxt, n=12, overwrite=F)
 }
@@ -121,4 +138,10 @@ if(1==0) {
   bb <- parseArticleBody(artxt)
   write.csv(bb[[1]], file='art1.csv')
 }
+
+
+
+
+
+
 

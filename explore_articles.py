@@ -22,7 +22,11 @@ query = {'$where': 'this.body.length>50'}
 art = list(db.articles1.find(query).limit(100))
 len(art)
 
-art2 = art
-for i in range(0, len(art2)):
-    art2[i]['body'] = re.sub('\\\\u....', '', repr(art2[i]['body']))
+bart2 = art
+for i in range(0, len(bart2)):
+    bart2[i]['body'] = str(repr(bart2[i]['body']))
+    bart2[i]['body'] = re.sub('\\\\u....', '', bart2[i]['body'])
+    bart2[i]['body'] = re.sub('\\\\x..', '', bart2[i]['body'])
+    
+
 

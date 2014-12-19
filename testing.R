@@ -48,12 +48,12 @@ mongo <- list(dbName='nyt', collection='articles1', host='ds063240.mongolab.com:
 con <- mongoDbConnect(mongo$dbName, mongo$host)
 authenticated <-dbAuthenticate(con, username=mongo$username, password=mongo$password)
 
-output <- dbGetQuery(con, 'articles1', '{"source":"The New York Times"}', 0, 1000)
+output <- dbGetQuery(con, 'articles1', '{"source":"The New York Times"}', 0, 500)
 
 dim(output)
 sort(table(nchar(output$body)>50))
 
-
+sort(table(output$document_type[which(output$X_id!='' | is.na(output$X_id))]))
 
 
 

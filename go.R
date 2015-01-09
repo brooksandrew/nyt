@@ -39,13 +39,22 @@ barplot(sort(table(sn), decreasing=T), las=2)
 
 sort(table(unlist(sapply(all, function(x) x['document_type']))), decreasing=T)
 
-bc <- unlist(sapply(all, function(x) nchar(x[['body']])>0))
+bodythere <- function(x) {
+  there <- !is.null(x[['body']])
+  if(there==T){
+    if(nchar(x[['body']])<10) there<-F
+  }
+  return(there)
+}
+bc <- unlist(sapply(all, bodythere))
+bc <- unlist(sapply(all, function(x) is.null(x[['body']])))
 d <- as.Date(unlist(sapply(all, function(x) x[['pub_date']])))
 d <- unlist(sapply(all, function(x) x[['type_of_material']]))
 d2 <- unlist(sapply(all, function(x) x[['source']]))
 d1 <- unlist(sapply(all, function(x) x[['document_type']]))
 
-table(d, bc)
+table(d2, bc)
+
 for(i in 1:length(all)) print(paste0(i,'  ',nchar(all[[i]]$body), '   ', as.Date(all[[i]]$pub_date),'   ', all[[i]]$web_url))
 
 lp <- sapply(all, function(x) x[['body']])
@@ -57,4 +66,20 @@ lpmap <- tm_map(lpmap,  removeWords, stopwords('english'))
 wordcloud(lpmap, random.order=F, colors=brewer.pal(6,"Dark2"))
 
 
+library('rPython')
+# Load/run the main Python script
+
+setwd('/Users/abrooks/Documents/github//nyt')
+python.load("rpy.py")
+
+# Get the variable
+new_subs_data <- python.get("new_subs")
+
+# Load/run re-fecth script
+python.load("RefreshNewSubs.py")
+
+# Get the updated variable
+new_subs_data <- python.get("new_subs")
+
+head(new_subs_data)
 

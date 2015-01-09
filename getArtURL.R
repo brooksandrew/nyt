@@ -1,15 +1,15 @@
 library('rjson')
 library('httr')
-library('rjson')
 library('RMongo')
 library('XML')
 
 ########################################################
 ## this function generates the URL for a GET request to the New York Times Article Search API
 ########################################################
-makeURL <- function(q=NULL, fq=NULL, begin_date=NULL, end_date=NULL, key=getOption("nyt_as_key"), page=0){
-  arglist <- list(q=q, fq=fq, begin_date=begin_date, end_date=end_date, 'api-key'=key, page=page)
-  
+makeURL <- function(q=NULL, fq=NULL, begin_date=NULL, end_date=NULL, key=getOption("nyt_as_key"), page=0, 
+                    sort=NULL, fl=NULL, hl=NULL, facet_field=NULL, facet_filter=NULL){
+  arglist <- list(q=q, fq=fq, begin_date=begin_date, end_date=end_date, 'api-key'=key, page=page,
+                  sort=sort, fl=fl, hl=hl, facet_field=facet_field, facet_filter=facet_filter)
   url <- 'http://api.nytimes.com/svc/search/v2/articlesearch.json?'
   for(i in 1:length(arglist)){
     if(is.null(unlist(arglist[i]))==F){
@@ -35,7 +35,7 @@ getMeta <- function(url, pages=Inf, sleep=0.1, tryn=3) {
   i <- 1
   e <- seq(-tryn, -tryn/2, length.out=tryn)
   while(i<=pages){
-    if(length(unique(e[(length(e)-(tryn-1)):length(e)]))==1) i <- i+1 ## attempt tryn times before moving on
+    if(length(unique(e[(length(e)-(tryn-1)):length(e)]))==1) i <- i+1 ## attempt tryn times before moving to next page
     tryget <- try({
       urlp <- gsub('page=\\d+', paste0('page=', i), url)
       p <- GET(urlp)
@@ -61,7 +61,7 @@ getMeta <- function(url, pages=Inf, sleep=0.1, tryn=3) {
 if(1==0){
   library('httr')
   url <- makeURL(q='andrew', begin_date='20110101', end_date='20111025', key='sample-key')
-  a <- getMeta(url, pages=111, sleep=0)
+  a <- getMeta(url, pages=22, sleep=0)
 }
 
 ########################################################

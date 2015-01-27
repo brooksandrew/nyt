@@ -1,6 +1,6 @@
 library('rjson')
 library('httr')
-library('RMongo')
+library('RMongo') #install_github('tc/RMongo')
 library('XML')
 
 ########################################################

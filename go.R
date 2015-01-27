@@ -26,6 +26,20 @@ system.time({
 
 
 ## #################################
+## Deleting tables with no body
+## #################################
+#install_github('tc/RMongo') RMongo on CRAN doesnt support R 3.1.1
+library('RMongo') #needed to download from here: http://support.apple.com/kb/DL1572
+library('rjson')
+
+con <- mongoDbConnect('nyt', host='ds063240.mongolab.com:63240')
+authenticated <-dbAuthenticate(con, username='user1', password='password')
+
+## removing all articles without a body.  BE CAREFUL!
+if(1==0) dbRemoveQ uery(con, 'articles1', "{'$where': 'this.body.length<10'}")
+
+
+## #################################
 ## DIAGNOSTICS ...  run interactively
 ## #################################
 
